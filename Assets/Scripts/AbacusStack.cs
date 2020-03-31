@@ -7,6 +7,9 @@ public class AbacusStack : MonoBehaviour
     public const int numTopAbacusBead = 1;
     public const int numBottomAbacusBead = 4;
 
+    private Abacus abacus;
+    private int index;
+
     [SerializeField]
     private GameObject abacusBeadPrefab;
     [SerializeField]
@@ -22,9 +25,14 @@ public class AbacusStack : MonoBehaviour
 
     private List<GameObject> topAbacusBeadList;
     private List<GameObject> bottomAbacusBeadList;
-    private int state;
+    private List<bool> topAbacusBeadStateList;
+    private List<bool> bottomAbacusBeadStateList;
 
-    private GameObject draggingAbacusBeadRoot;
+    public void BindToAbacus(Abacus inputAbacus, int inputIndex)
+    {
+        abacus = inputAbacus;
+        index = inputIndex;
+    }
 
     public bool IsValidInputSize(){
 
@@ -51,24 +59,28 @@ public class AbacusStack : MonoBehaviour
 
         topAbacusBeadList = new List<GameObject>();
         bottomAbacusBeadList = new List<GameObject>();
+        topAbacusBeadStateList = new List<bool>();
+        bottomAbacusBeadStateList = new List<bool>();
 
         float halfAbacusStackSpace = (abacusStackHeight - (topAbacusStackHeight + bottomAbacusStackHeight))/2;
 
         for(int i=0; i<numTopAbacusBead; i++){
             GameObject abacusBeadObject = Instantiate( abacusBeadPrefab, this.transform );
-            abacusBeadObject.transform.localPosition += Vector3.up * ( topAbacusStackHeight + halfAbacusStackSpace - ( abacusBeadHeight/2 + i*abacusBeadHeight ) );
             AbacusBead abacusBead = abacusBeadObject.GetComponent<AbacusBead>();
             abacusBead.BindToAbacusStack( this, i, true );
             topAbacusBeadList.Add( abacusBeadObject );
+            topAbacusBeadStateList.Add(false);
         }
 
         for(int i=0; i<numBottomAbacusBead; i++){
             GameObject abacusBeadObject = Instantiate( abacusBeadPrefab, this.transform );
-            abacusBeadObject.transform.localPosition += Vector3.down * ( bottomAbacusStackHeight + halfAbacusStackSpace - ( abacusBeadHeight/2 + i*abacusBeadHeight ) );
             AbacusBead abacusBead = abacusBeadObject.GetComponent<AbacusBead>();
             abacusBead.BindToAbacusStack( this, i, false );
             bottomAbacusBeadList.Add( abacusBeadObject );
+            bottomAbacusBeadStateList.Add(false);
         }
+
+        UpdateAbacusBeadPosition();
     }
 
     public List<GameObject> GetDraggingAbacusBeadList( int index, bool isTop ){
@@ -87,36 +99,105 @@ public class AbacusStack : MonoBehaviour
         return draggingAbacusBeadList;
     }
 
-    public void BeginDragAbacusBead( int index, bool isTop ){
-        Debug.Log("Begin Drag");
-        List<GameObject> draggingAbacusBeadList = GetDraggingAbacusBeadList( index, isTop );
+    public void UpdateAbacusBeadPosition()
+    {
+        float halfAbacusStackSpace = (abacusStackHeight - (topAbacusStackHeight + bottomAbacusStackHeight)) / 2;
 
-        if( draggingAbacusBeadList is null )
-            return;
-
-        draggingAbacusBeadRoot = new GameObject();
-        draggingAbacusBeadRoot.transform.parent = transform;
-        foreach( GameObject obj in draggingAbacusBeadList ){
-            obj.transform.parent = draggingAbacusBeadRoot.transform;
+        for (int i = 0; i < numTopAbacusBead; i++)
+        {
+            if (!topAbacusBeadStateList[i])
+            {
+                topAbacusBeadList[i].transform.localPosition = Vector3.up * (topAbacusStackHeight + halfAbacusStackSpace - (abacusBeadHeight / 2 + i * abacusBeadHeight));
+            }
+            else
+            {
+                topAbacusBeadList[i].transform.localPosition = Vector3.up * (halfAbacusStackSpace + (abacusBeadHeight / 2) + ((numTopAbacusBead - i - 1) * abacusBeadHeight));
+            }
+        }
+        for (int i = 0; i < numBottomAbacusBead; i++)
+        {
+            if (!bottomAbacusBeadStateList[i])
+            {
+                bottomAbacusBeadList[i].transform.localPosition = Vector3.down * (bottomAbacusStackHeight + halfAbacusStackSpace - (abacusBeadHeight / 2 + i * abacusBeadHeight));
+            }
+            else
+            {
+                bottomAbacusBeadList[i].transform.localPosition = Vector3.down * (halfAbacusStackSpace + (abacusBeadHeight / 2) + ((numBottomAbacusBead - i - 1) * abacusBeadHeight));
+            }
         }
     }
 
-    public void DragAbacusBead(){
-    }
-
-    public void EndDragAbacusBead(){
-        Debug.Log("End Drag");
-        for(int i=0; i<draggingAbacusBeadRoot.transform.childCount; i++){
-            draggingAbacusBeadRoot.transform.GetChild(i).parent = transform;
-        }
-    }
-
-    void Start(){
-
-        PopulateAbacusStack();
-    }
-
-    void Update(){
+    public void MoveAbacusBead( int index, bool isTop ){
         
+        if (isTop)
+        {
+            bool toggledState = !topAbacusBeadStateList[index];
+            if(toggledState)
+            {
+                for(int i=index; i<numTopAbacusBead; i++)
+                {
+                    topAbacusBeadStateList[i] = toggledState;
+                }
+            }
+            else
+            {
+                for (int i = index; i >= 0; i--)
+                {
+                    topAbacusBeadStateList[i] = toggledState;
+                }
+            }
+        }
+        else
+        {
+            bool toggledState = !bottomAbacusBeadStateList[index];
+            if (toggledState)
+            {
+                for (int i = index; i < numBottomAbacusBead; i++)
+                {
+                    bottomAbacusBeadStateList[i] = toggledState;
+                }
+            }
+            else
+            {
+                for (int i = index; i >= 0; i--)
+                {
+                    bottomAbacusBeadStateList[i] = toggledState;
+                }
+            }
+        }
+
+        UpdateAbacusBeadPosition();
+        abacus.ChangeAbacusStack();
+    }
+
+    public int ReadValue()
+    {
+        int value = 0;
+
+        for (int i = 0; i < numTopAbacusBead; i++)
+        {
+            value += topAbacusBeadStateList[i] ? 5*(i+1) : 0;
+        }
+        for (int i = 0; i < numBottomAbacusBead; i++)
+        {
+            value += bottomAbacusBeadStateList[i] ? 1 : 0;
+        }
+
+        return value;
+    }
+
+    public override string ToString()
+    {
+        string result = "";
+        foreach (bool bottomAbacusBeadState in bottomAbacusBeadStateList)
+        {
+            result += bottomAbacusBeadState ? "O" : "X";
+        }
+        result += "|";
+        foreach ( bool topAbacusBeadState in topAbacusBeadStateList)
+        {
+            result += topAbacusBeadState ? "O" : "X";
+        }
+        return result;
     }
 }

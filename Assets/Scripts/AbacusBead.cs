@@ -14,15 +14,7 @@ public class AbacusBead : MonoBehaviour
         isTop = inputIsTop;
     }
 
-    void OnMouseDown(){
-        abacusStack.BeginDragAbacusBead( index, isTop );
-    }
-
-    void OnMouseDrag(){
-        abacusStack.DragAbacusBead();
-    }
-
     void OnMouseUp(){
-        abacusStack.EndDragAbacusBead();
+        abacusStack.MoveAbacusBead( index, isTop );
     }
 }
