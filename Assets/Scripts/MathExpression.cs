@@ -55,40 +55,18 @@ public static class MathHelper
 
         return allFactorList;
     }
-}
 
-public class IntRange
-{
-    private uint min;
-    public uint Min {
-        set {
-            if (value > max)
-                max = value;
-            else
-                min = value;
-        }
-        get {
-            return min;
-        }
-    }
-    
-    private uint max;
-    public uint Max {
-        set {
-            if (value < min)
-                min = value;
-            else
-                max = value;
-        }
-        get {
-            return max;
-        }
-    }
-
-    public IntRange( uint min=uint.MinValue, uint max=uint.MaxValue )
+    public static uint[] GenerateUintRange( uint min, uint max, uint step=1 )
     {
-        this.min = min;
-        this.max = max;
+        if( min>max )
+            throw new System.ArgumentException("Minimum bound must not be greater than maximum bound.");
+        uint rangeLength = (max-min+step)/step;
+        uint[] range = new uint[ rangeLength ];
+        for(uint i=0;i<rangeLength;i++)
+        {
+            range[i] = min + i*step;
+        }
+        return range;
     }
 }
 
@@ -164,37 +142,52 @@ public static class MathExpressionGenerator
         }
     }*/
 
-    public static IntRange GetLowerExpectedRange(uint result, OperatorType operatorType, uint expectedNumDigit, uint biasNumDigit=0)
+    public static uint[] GetLowerExpectedRange(uint result, OperatorType operatorType, uint expectedNumDigit, uint biasNumDigit=0)
     {
         //  Initialize lower expected range. This range is used for:
         //      1) Pick a randomized second operand (the lower one)
         //      2) Compute a paried higher operand by doing the inverse operation with the result
-        IntRange lowerExpectedRange = new IntRange();
-
         uint resultNumDigit = (uint)(result.ToString().Length);
+        if(resultNumDigit < 1)
+            throw new System.ArithmeticException( "The number of result digits cannot be less than 1." );
         switch (operatorType)
         {
             case OperatorType.DIVIDE:
                 if (biasNumDigit < resultNumDigit - 1)
-                    throw new System.ArithmeticException();
-                else if (resultNumDigit < 1 || resultNumDigit > expectedNumDigit)
-                    throw new System.ArithmeticException();
+                    throw new System.ArithmeticException( "Too few number of bias digits." );
+                else if (resultNumDigit > expectedNumDigit)
+                    throw new System.ArithmeticException( "The number of expected digits cannot be less than of result." );
                 else
                 {
-                    uint minNumDigit = System.Math.Max( expectedNumDigit - biasNumDigit, 1 );
-                    lowerExpectedRange.Min = (uint)System.Math.Pow( 10, minNumDigit-1 );
-                    lowerExpectedRange.Max = (uint)((System.Math.Pow(10, expectedNumDigit) - 1) / result);
-                    return lowerExpectedRange;
+                    uint minExpectedNum = (uint)System.Math.Pow( 10, System.Math.Max( expectedNumDigit - biasNumDigit, 1 ) - 1);
+                    uint maxExpectedNum = (uint)((System.Math.Pow(10, expectedNumDigit) - 1) / result);
+                    return MathHelper.GenerateUintRange( minExpectedNum, maxExpectedNum );
                 }
             case OperatorType.MULTIPLY:
-                if (biasNumDigit < System.Math.Floor(resultNumDigit / 2.0f))
-                    throw new System.ArithmeticException();
+                if (biasNumDigit < resultNumDigit/2)
+                    throw new System.ArithmeticException( "Too few number of bias digits." );
                 else
                 {
-                    //IMPLEMENT ME
-                    uint minNumDigit = System.Math.Max(expectedNumDigit - biasNumDigit, 1);
-                    lowerExpectedRange.Min = (uint)System.Math.Pow(10, minNumDigit - 1);
-                    return lowerExpectedRange;
+                    List<uint> primeFactorList = MathHelper.Factorize( result );
+                    List<uint> allFactorList = MathHelper.GenerateAllFactorList( primeFactorList );
+                    allFactorList = allFactorList.FindAll( x => x >= System.Math.Pow( 10, System.Math.Max( expectedNumDigit - biasNumDigit, 1 ) - 1)
+                                                                && x <= System.Math.Pow( 10, biasNumDigit + 1 ) );
+                    return allFactorList.ToArray();
+                }
+            case OperatorType.MINUS:
+                {
+                    uint minExpectedNum = (uint)System.Math.Pow( 10, System.Math.Max( expectedNumDigit - biasNumDigit, 1 ) - 1);
+                    uint maxExpectedNum = (uint)((System.Math.Pow(10, expectedNumDigit) - 1) - result);
+                    return MathHelper.GenerateUintRange( minExpectedNum, maxExpectedNum );
+                }
+            case OperatorType.PLUS:
+                if (expectedNumDigit > resultNumDigit)
+                    throw new System.ArithmeticException( "The number of expected digits cannot be greater than of result." );
+                else if( 2*(System.Math.Pow( 10, expectedNumDigit ) - 1) < result )
+                    throw new System.ArithmeticException( "Given number of expected digits will produce an empty range." );
+                {
+                    //uint minExpectedNum = (uint)System.Math.Pow( 10, System.Math.Max( expectedNumDigit - biasNumDigit, 1 ) - 1);
+                    //uint maxExpectedNum = System. (uint)((System.Math.Pow(10, expectedNumDigit) - 1) - result);
                 }
             default:
                 throw new System.InvalidOperationException();
