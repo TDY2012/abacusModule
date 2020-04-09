@@ -223,10 +223,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff72dd019681dd741ac581d64cb9e04a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  result: 1400
-  operatorType: 2
-  expectedDigitNum: 4
-  biasDigitNum: 3
+  result: 32
+  numOperator: 4
+  expectedNumDigit: 2
+  allowOperatorTypeArray: 0100000000000000
 --- !u!4 &594449204
 Transform:
   m_ObjectHideFlags: 0
