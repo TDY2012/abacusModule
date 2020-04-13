@@ -16,6 +16,23 @@ public static class MathHelper
             yield return n++;
     }
 
+    public static Func<uint, uint, uint> GetOperatorFunc( OperatorType operatorType )
+    {
+        switch (operatorType)
+        {
+            case OperatorType.PLUS:
+                return (x, y) => x + y;
+            case OperatorType.MINUS:
+                return (x, y) => x - y;
+            case OperatorType.MULTIPLY:
+                return (x, y) => x * y;
+            case OperatorType.DIVIDE:
+                return (x, y) => x / y;
+            default:
+                throw new InvalidOperationException(string.Format("Invalid operator type {0}", operatorType));
+        }
+    }
+
     public static uint ApplyOperator( uint firstOperandValue, uint secondOperandValue, OperatorType operatorType )
     {
         switch( operatorType )
@@ -140,9 +157,10 @@ public static class MathExpressionGenerator
         uint minExpectedNum = (uint)Math.Pow(10, Math.Max(expectedNumDigit - biasNumDigit, 1) - 1);
         uint maxExpectedNum = (uint)Math.Pow(10, expectedNumDigit + biasNumDigit) - 1;
 
+        Func<uint, uint, uint> operatorFunc = MathHelper.GetOperatorFunc(operatorType);
         IEnumerable<Tuple<uint, uint>> resultIEnumberable = from x in MathHelper.GenerateUintRange(minExpectedNum, maxExpectedNum)
                                                             from y in MathHelper.GenerateUintRange(minExpectedNum, maxExpectedNum)
-                                                            where MathHelper.ApplyOperator( x, y, operatorType ) == value
+                                                            where operatorFunc( x, y ) == value
                                                             select new Tuple<uint, uint>(x, y);
 
         if( operatorType == OperatorType.DIVIDE )
