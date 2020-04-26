@@ -13,7 +13,15 @@ public class ExpressionManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        MathExpression e = MathExpressionGenerator.GenerateMathExpressionByValue( result, numOperator, expectedNumDigit, allowOperatorTypeArray );
-        Debug.Log(e.ToString());
+        Debug.Log("Press \"R\" to generate random expression.");
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            MathExpression e = MathExpressionGenerator.GenerateMathExpressionByValue(result, numOperator, expectedNumDigit, allowOperatorTypeArray);
+            Debug.Log(e.ToString());
+        }
     }
 }

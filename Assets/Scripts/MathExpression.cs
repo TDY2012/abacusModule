@@ -49,6 +49,34 @@ public static class MathHelper
                 throw new InvalidOperationException( string.Format("Invalid operator type {0}", operatorType ) );
         }
     }
+
+    public static uint[] GetPossibleOperandNumDigitRange( uint value, OperatorType operatorType, uint expectedNumDigit )
+    {
+        uint valueNumDigit = (uint)value.ToString().Length;
+        uint[] numDigitRange = new uint[2];
+        switch (operatorType)
+        {
+            case OperatorType.PLUS:
+                numDigitRange[0] = Math.Max(1, valueNumDigit - 1);
+                numDigitRange[1] = valueNumDigit;
+                break;
+            case OperatorType.MINUS:
+                numDigitRange[0] = Math.Max(valueNumDigit, expectedNumDigit);
+                numDigitRange[1] = Math.Max(valueNumDigit, expectedNumDigit);
+                break;
+            case OperatorType.MULTIPLY:
+                numDigitRange[0] = Math.Max(1, valueNumDigit/2);
+                numDigitRange[1] = (valueNumDigit+1)/2;
+                break;
+            case OperatorType.DIVIDE:
+                numDigitRange[0] = Math.Max(1, expectedNumDigit);
+                numDigitRange[1] = Math.Max(2*valueNumDigit, expectedNumDigit);
+                break;
+            default:
+                throw new InvalidOperationException(string.Format("Invalid operator type {0}", operatorType));
+        }
+        return numDigitRange;
+    }
 }
 
 public abstract class MathExpression
@@ -154,8 +182,10 @@ public static class MathExpressionGenerator
 
     public static List<Tuple<uint, uint>> GeneratePossibleOperandValueTupleList(uint value, OperatorType operatorType, uint expectedNumDigit, uint biasNumDigit = 0)
     {
-        uint minExpectedNum = (uint)Math.Pow(10, Math.Max(expectedNumDigit - biasNumDigit, 1) - 1);
-        uint maxExpectedNum = (uint)Math.Pow(10, expectedNumDigit + biasNumDigit) - 1;
+        uint[] expectedNumDigitRange = MathHelper.GetPossibleOperandNumDigitRange(value, operatorType, expectedNumDigit);
+
+        uint minExpectedNum = (uint)Math.Pow(10, Math.Max(expectedNumDigitRange[0] - biasNumDigit, 1) - 1);
+        uint maxExpectedNum = (uint)Math.Pow(10, expectedNumDigitRange[1] + biasNumDigit) - 1;
 
         Func<uint, uint, uint> operatorFunc = MathHelper.GetOperatorFunc(operatorType);
         IEnumerable<Tuple<uint, uint>> resultIEnumberable = from x in MathHelper.GenerateUintRange(minExpectedNum, maxExpectedNum)
@@ -173,6 +203,7 @@ public static class MathExpressionGenerator
         List<Tuple<uint, uint>> resultList = resultIEnumberable.ToList();
         if (resultList.Count == 0)
         {
+            Console.WriteLine("here");
             return GeneratePossibleOperandValueTupleList(value, operatorType, expectedNumDigit, biasNumDigit + 1);
         }
         return resultList;
