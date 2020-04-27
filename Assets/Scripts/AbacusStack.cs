@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class AbacusStack : MonoBehaviour
 {
-    public const int numTopAbacusBead = 1;
-    public const int numBottomAbacusBead = 4;
+    public const uint numTopAbacusBead = 1;
+    public const uint numBottomAbacusBead = 4;
 
     private Abacus abacus;
     private int index;
@@ -43,7 +43,7 @@ public class AbacusStack : MonoBehaviour
         return true;
     }
 
-    public bool IsValidAbacusIndex( int index, bool isTop ){
+    public bool IsValidAbacusIndex( uint index, bool isTop ){
         if( isTop )
             return ( index >= 0 ) && ( index < numTopAbacusBead );
         else
@@ -59,8 +59,6 @@ public class AbacusStack : MonoBehaviour
 
         topAbacusBeadList = new List<GameObject>();
         bottomAbacusBeadList = new List<GameObject>();
-        topAbacusBeadStateList = new List<bool>();
-        bottomAbacusBeadStateList = new List<bool>();
 
         float halfAbacusStackSpace = (abacusStackHeight - (topAbacusStackHeight + bottomAbacusStackHeight))/2;
 
@@ -69,7 +67,6 @@ public class AbacusStack : MonoBehaviour
             AbacusBead abacusBead = abacusBeadObject.GetComponent<AbacusBead>();
             abacusBead.BindToAbacusStack( this, i, true );
             topAbacusBeadList.Add( abacusBeadObject );
-            topAbacusBeadStateList.Add(false);
         }
 
         for(int i=0; i<numBottomAbacusBead; i++){
@@ -77,19 +74,18 @@ public class AbacusStack : MonoBehaviour
             AbacusBead abacusBead = abacusBeadObject.GetComponent<AbacusBead>();
             abacusBead.BindToAbacusStack( this, i, false );
             bottomAbacusBeadList.Add( abacusBeadObject );
-            bottomAbacusBeadStateList.Add(false);
         }
 
-        UpdateAbacusBeadPosition();
+        ResetAbacusStack();
     }
 
-    public List<GameObject> GetDraggingAbacusBeadList( int index, bool isTop ){
+    public List<GameObject> GetDraggingAbacusBeadList( uint index, bool isTop ){
         if( !IsValidAbacusIndex( index, isTop ) )
             return null;
         
         List<GameObject> draggingAbacusBeadList = new List<GameObject>();
-        int numAbacusBead = isTop ? numTopAbacusBead : numBottomAbacusBead;
-        for(int i=index; i<numAbacusBead; i++){
+        uint numAbacusBead = isTop ? numTopAbacusBead : numBottomAbacusBead;
+        for(int i=(int)index; i<numAbacusBead; i++){
             if(isTop)
                 draggingAbacusBeadList.Add( topAbacusBeadList[i] );
             else
@@ -97,6 +93,21 @@ public class AbacusStack : MonoBehaviour
         }
 
         return draggingAbacusBeadList;
+    }
+
+    public void ResetAbacusStack()
+    {
+        topAbacusBeadStateList = new List<bool>();
+        bottomAbacusBeadStateList = new List<bool>();
+        for (int i = 0; i < numTopAbacusBead; i++)
+        {
+            topAbacusBeadStateList.Add(false);
+        }
+        for (int i = 0; i < numBottomAbacusBead; i++)
+        {
+            bottomAbacusBeadStateList.Add(false);
+        }
+        UpdateAbacusBeadPosition();
     }
 
     public void UpdateAbacusBeadPosition()
@@ -170,20 +181,25 @@ public class AbacusStack : MonoBehaviour
         abacus.ChangeAbacusStack();
     }
 
-    public int ReadValue()
+    public uint ReadValue()
     {
-        int value = 0;
+        uint value = 0;
 
         for (int i = 0; i < numTopAbacusBead; i++)
         {
-            value += topAbacusBeadStateList[i] ? 5*(i+1) : 0;
+            value += (uint)(topAbacusBeadStateList[i] ? 5 * (i + 1) : 0);
         }
         for (int i = 0; i < numBottomAbacusBead; i++)
         {
-            value += bottomAbacusBeadStateList[i] ? 1 : 0;
+            value += (uint)(bottomAbacusBeadStateList[i] ? 1 : 0);
         }
 
         return value;
+    }
+
+    public string ReadValueAsString()
+    {
+        return ReadValue().ToString();
     }
 
     public override string ToString()

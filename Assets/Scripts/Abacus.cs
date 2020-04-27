@@ -5,19 +5,26 @@ using UnityEngine.UI;
 
 public class Abacus : MonoBehaviour
 {
-    public Text numberText;
-
     [SerializeField]
     private GameObject abacusStackPrefab;
-
     [SerializeField]
-    private int numDigit;
+    private uint numDigit;
+    public uint NumDigit {
+        get {
+            return numDigit;
+        }
+    }
     [SerializeField]
     private float abacusWidth;
     [SerializeField]
     private float abacusHeight;
-
+    private GameManager gameManager;
     private List<GameObject> abacusStackList;
+
+    public void BindToGameManager(GameManager inputGameManager)
+    {
+        gameManager = inputGameManager;
+    }
 
     public void PopulateAbacus()
     {
@@ -35,25 +42,39 @@ public class Abacus : MonoBehaviour
         }
     }
 
-    public void ChangeAbacusStack()
+    public void ResetAbacus()
     {
-        numberText.text = ReadValue().ToString().PadLeft(numDigit,'0');
+        foreach( GameObject abacusStackObject in abacusStackList)
+        {
+            AbacusStack abacusStack = abacusStackObject.GetComponent<AbacusStack>();
+            abacusStack.ResetAbacusStack();
+        }
     }
 
-    public int ReadValue()
+    public void ChangeAbacusStack()
     {
-        int value = 0;
+        gameManager.UpdateQuestionText();
+    }
+
+    public uint ReadValue()
+    {
+        uint value = 0;
         for(int i=0; i < numDigit; i++)
         {
             AbacusStack abacusStack = abacusStackList[i].GetComponent<AbacusStack>();
-            value += abacusStack.ReadValue() * (int)Mathf.Pow(10, i);
+            value += abacusStack.ReadValue() * (uint)Mathf.Pow(10, i);
         }
         return value;
     }
 
-    private void Start()
+    public string ReadValueAsString()
     {
-        PopulateAbacus();
-        ChangeAbacusStack();
+        string value = "";
+        for (int i = 0; i < numDigit; i++)
+        {
+            AbacusStack abacusStack = abacusStackList[i].GetComponent<AbacusStack>();
+            value = abacusStack.ReadValueAsString() + value;
+        }
+        return value;
     }
 }
